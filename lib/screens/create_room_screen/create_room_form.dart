@@ -4,6 +4,28 @@ import 'package:chess_timer/widgets/chip_list.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
+class RoomFormModel {
+  static final timePlays = const [3, 5, 10, 15];
+  static final addTimes = const [1, 3, 5, 10, 15];
+
+  String roomName = "";
+  int player1TimePlayIndex = 0;
+  int player2TimePlayIndex = 0;
+  int player1TimePlay;
+  int player2TimePlay;
+  int addTime = 1;
+  String player1Name = "";
+  String player2Name = "";
+
+  RoomFormModel() {
+    player1TimePlay = timePlays[player1TimePlayIndex];
+    player2TimePlay = timePlays[player2TimePlayIndex];
+  }
+
+  Room toDomain() => Room(0, roomName, player1Name, player2Name,
+      player1TimePlay, player2TimePlay, addTime);
+}
+
 class CreateRoomForm extends StatefulWidget {
   final Function(Room room) onSubmitClicked;
   final bool isLoading;
@@ -17,64 +39,17 @@ class CreateRoomForm extends StatefulWidget {
 }
 
 class _CreateRoomFormState extends State<CreateRoomForm> {
-  final _timePlays = const [3, 5, 10, 15];
-  final _addTimes = const [1, 3, 5, 10, 15];
+  var roomFormModel = RoomFormModel();
 
-  TextEditingController _roomNameController;
-
-  var _selectedTimePlayIndex = 0;
-  var _selectedAddTimeIndex = 0;
-
-  int _player1time;
-  int _player2time;
-
-  var _roomNameError = false;
-
-  @override
-  void initState() {
-    _roomNameController = TextEditingController();
-    _player1time = _timePlays[_selectedTimePlayIndex];
-    _player2time = _timePlays[_selectedTimePlayIndex];
-    super.initState();
-  }
-
-  @override
-  void dispose() {
-    _roomNameController.dispose();
-    super.dispose();
-  }
-
-  void _updateSelectedTimePlayIndex(int index) {
-    setState(() {
-      _selectedTimePlayIndex = index;
-      _player1time = _timePlays[_selectedTimePlayIndex];
-      _player2time = _timePlays[_selectedTimePlayIndex];
-    });
-  }
-
-  void _updateSelectedAddTimeIndex(int index) {
-    setState(() {
-      _selectedAddTimeIndex = index;
-    });
-  }
-
-  void _updatePlayersTime(int player1Time, int player2Time) {
-    setState(() {
-      _player1time = player1Time;
-      _player2time = player2Time;
-    });
-  }
+  final _formKey = GlobalKey<FormState>();
+  final _player1Key = GlobalKey<FormFieldState>();
+  final _player2Key = GlobalKey<FormFieldState>();
 
   void _submit() {
-    if (_roomNameController.text.isEmpty) {
-      setState(() {
-        _roomNameError = true;
-      });
-      return;
+    if (_formKey.currentState.validate()) {
+      _formKey.currentState.save();
+      widget.onSubmitClicked(roomFormModel.toDomain());
     }
-
-    widget.onSubmitClicked(Room(0, _roomNameController.text, "", "",
-        _player1time, _player2time, _addTimes[_selectedAddTimeIndex]));
   }
 
   @override
@@ -82,69 +57,107 @@ class _CreateRoomFormState extends State<CreateRoomForm> {
     final theme = Theme.of(context);
     return Container(
       margin: const EdgeInsets.all(16.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          TextField(
-            controller: _roomNameController,
-            decoration: InputDecoration(
-                border: OutlineInputBorder(),
-                labelText: "Room name",
-                errorText: _roomNameError ? "Room name cannot be empty" : null),
-            cursorColor: Palette.cursorColor,
-          ),
-          Container(
+      child: Form(
+        key: _formKey,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            TextFormField(
+              decoration: InputDecoration(
+                  border: OutlineInputBorder(), labelText: "Room name"),
+              cursorColor: Palette.cursorColor,
+              onSaved: (value) => roomFormModel.roomName = value,
+              validator: (value) =>
+                  value.isEmpty ? "Room name is required" : null,
+            ),
+            Container(
+                margin: const EdgeInsets.only(top: 16, bottom: 16),
+                child: Text(
+                  "Time play (minutes)",
+                  style: theme.textTheme.subtitle1,
+                )),
+            ChipList(
+                items: RoomFormModel.timePlays,
+                onSelectionChanged: (index, value) {
+                  setState(() {
+                    roomFormModel.player1TimePlay = value;
+                    roomFormModel.player2TimePlay = value;
+                    roomFormModel.player1TimePlayIndex = index;
+                    roomFormModel.player2TimePlayIndex = index;
+                  });
+                }),
+            Container(
               margin: const EdgeInsets.only(top: 16, bottom: 16),
               child: Text(
-                "Time play (minutes)",
+                "Add time (seconds)",
                 style: theme.textTheme.subtitle1,
-              )),
-          ChipList(
-              items: _timePlays,
-              onSelectionChanged: (index, value) =>
-                  _updateSelectedTimePlayIndex(index),
-              selectedIndex: _selectedTimePlayIndex),
-          Container(
-            margin: const EdgeInsets.only(top: 16, bottom: 16),
-            child: Text(
-              "Add time",
-              style: theme.textTheme.subtitle1,
+              ),
             ),
-          ),
-          ChipList(
-            items: _addTimes,
-            onSelectionChanged: (index, value) =>
-                _updateSelectedAddTimeIndex(index),
-            selectedIndex: _selectedAddTimeIndex,
-            labelFormat: (value) => "+" + value.toString(),
-          ),
-          PlayerTimeContainer(
-              label: "Player 1 time",
-              value: _player1time,
+            ChipList(
+              items: RoomFormModel.addTimes,
+              onSelectionChanged: (index, value) {
+                roomFormModel.addTime = value;
+              },
+              labelFormat: (value) => "+" + value.toString(),
+            ),
+            PlayerTimeContainer(
+              textFormKey: _player1Key,
+              initialValue: "Player 1",
+              time: roomFormModel.player1TimePlay,
               reduce: () {
-                _updatePlayersTime(_player1time - 1, _player2time);
+                setState(() {
+                  roomFormModel.player1TimePlay -= 1;
+                });
               },
               inc: () {
-                _updatePlayersTime(_player1time + 1, _player2time);
-              }),
-          PlayerTimeContainer(
-              label: "Player 2 time",
-              value: _player2time,
+                setState(() {
+                  roomFormModel.player1TimePlay += 1;
+                });
+              },
+              onSave: (value) => roomFormModel.player1Name = value,
+              validator: (value) {
+                String player2Name = _player2Key.currentState.value;
+                if (value == player2Name) {
+                  return "Players name must differ";
+                } else {
+                  return null;
+                }
+              },
+            ),
+            PlayerTimeContainer(
+              textFormKey: _player2Key,
+              initialValue: "Player 2",
+              time: roomFormModel.player2TimePlay,
               reduce: () {
-                _updatePlayersTime(_player1time, _player2time - 1);
+                setState(() {
+                  roomFormModel.player2TimePlay -= 1;
+                });
               },
               inc: () {
-                _updatePlayersTime(_player1time, _player2time + 1);
-              }),
-          widget.isLoading == true
-              ? Center(
-                  child: CircularProgressIndicator(),
-                )
-              : RaisedButton(
-                  onPressed: _submit,
-                  child: Text("Submit"),
-                )
-        ],
+                setState(() {
+                  roomFormModel.player2TimePlay += 1;
+                });
+              },
+              onSave: (value) => roomFormModel.player2Name = value,
+              validator: (value) {
+                String player1Name = _player1Key.currentState.value;
+                if (player1Name == value) {
+                  return "Players name must differ";
+                } else {
+                  return null;
+                }
+              },
+            ),
+            widget.isLoading == true
+                ? Center(
+                    child: CircularProgressIndicator(),
+                  )
+                : RaisedButton(
+                    onPressed: _submit,
+                    child: Text("Submit"),
+                  )
+          ],
+        ),
       ),
     );
   }
@@ -153,14 +166,20 @@ class _CreateRoomFormState extends State<CreateRoomForm> {
 class PlayerTimeContainer extends StatelessWidget {
   final Function reduce;
   final Function inc;
-  final int value;
-  final String label;
+  final int time;
+  final GlobalKey textFormKey;
+  final Function(String) onSave;
+  final String Function(String) validator;
+  final String initialValue;
 
   PlayerTimeContainer(
-      {@required this.value,
+      {@required this.time,
       @required this.reduce,
       @required this.inc,
-      @required this.label});
+      @required this.textFormKey,
+      @required this.onSave,
+      @required this.validator,
+      @required this.initialValue});
 
   @override
   Widget build(BuildContext context) {
@@ -169,9 +188,16 @@ class PlayerTimeContainer extends StatelessWidget {
       margin: const EdgeInsets.only(top: 16, bottom: 16),
       child: Row(
         children: [
-          Text(
-            label,
-            style: theme.textTheme.subtitle1,
+          Expanded(
+            child: TextFormField(
+              key: textFormKey,
+              style: theme.textTheme.subtitle1,
+              onSaved: onSave,
+              validator: this.validator,
+              controller: TextEditingController()..text = initialValue,
+              decoration: InputDecoration(border: OutlineInputBorder()),
+              cursorColor: Palette.cursorColor,
+            ),
           ),
           RaisedButton(
               child: Text(
@@ -181,7 +207,7 @@ class PlayerTimeContainer extends StatelessWidget {
               shape: CircleBorder(),
               onPressed: reduce),
           Text(
-            value.toString(),
+            time.toString(),
             style: theme.textTheme.bodyText1,
           ),
           RaisedButton(
