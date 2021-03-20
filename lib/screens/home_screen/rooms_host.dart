@@ -7,14 +7,17 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 class RoomsHost extends StatelessWidget {
+
   final HomeState state;
   final Function onCreateClicked;
   final AsyncCallback onRefreshClicked;
+  final Function(Room room) onRoomClicked;
 
   RoomsHost({
     @required this.state,
     @required this.onCreateClicked,
     @required this.onRefreshClicked,
+    @required this.onRoomClicked
   });
 
   Widget _buildBody(HomeState state) {
@@ -25,7 +28,7 @@ class RoomsHost extends StatelessWidget {
       );
     } else if (state is RoomsListHomeState) {
       return RefreshIndicator(
-          child: RoomList(rooms: state.rooms), onRefresh: onRefreshClicked);
+          child: RoomList(rooms: state.rooms, onRoomClicked: onRoomClicked,), onRefresh: onRefreshClicked);
     } else {
       return Text("Unknown state");
     }

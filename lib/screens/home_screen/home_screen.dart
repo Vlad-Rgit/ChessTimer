@@ -1,8 +1,10 @@
+import 'package:chess_timer/domain/models/room.dart';
 import 'package:chess_timer/screens/create_room_screen/create_room_screen.dart';
 import 'package:chess_timer/screens/home_screen/home_bloc.dart';
 import 'package:chess_timer/screens/home_screen/home_intent.dart';
 import 'package:chess_timer/screens/home_screen/home_state.dart';
 import 'package:chess_timer/screens/home_screen/rooms_host.dart';
+import 'package:chess_timer/screens/timer_screen/timer_screen.dart';
 import 'package:flutter/material.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -54,6 +56,9 @@ class _HomeScreenState extends State<HomeScreen> {
               onCreateClicked: () {
                 _navigateToCreateRoom();
               },
+              onRoomClicked: (room) {
+                _navigateToTimer(room);
+              },
               onRefreshClicked: () async {
                 await _bloc.handleIntent(HomeIntent.refresh());
               },
@@ -62,6 +67,15 @@ class _HomeScreenState extends State<HomeScreen> {
         ],
       ),
     );
+  }
+
+  Future<void> _navigateToTimer(Room room) async {
+      await Navigator.push(context, MaterialPageRoute(
+        builder: (BuildContext context) {
+          return TimerScreen(room: room,);
+        }
+      ));
+      _bloc.handleIntent(HomeIntent.refresh());
   }
 
   Future<void> _navigateToCreateRoom() async {

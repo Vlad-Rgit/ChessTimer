@@ -1,3 +1,3 @@
 class Config {
-  static final apiAddress = "https://a2725-bb242.s2.deploy-f.com/api";
+  static final apiAddress = "http://10.0.2.2:8080/api";
 }

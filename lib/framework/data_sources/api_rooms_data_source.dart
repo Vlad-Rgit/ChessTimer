@@ -17,8 +17,14 @@ class ApiRoomsDataSource implements RoomsDataSource {
 
   @override
   Future<void> updateRooms() async {
-    final response = await http.get(Config.apiAddress + "/ApiRoom");
-    _roomsStreamController.sink.add(_parseRooms(response.body));
+    try {
+      final response = await http.get(Config.apiAddress + "/ApiRoom");
+      _roomsStreamController.sink.add(_parseRooms(response.body));
+    }
+    on Exception catch(ex){
+      print(ex.toString());
+    }
+
   }
 
   List<Room> _parseRooms(String body) {
